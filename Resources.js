@@ -7,10 +7,11 @@ class imageLoader{
             ground:"./sprites/ground.png",
             grid:"./sprites/grid.png",
             npc: "./sprites/hero-sheet2.png",
-            npcGen: "./sprites/generic-sheet.png",
+            npcGen: "./sprites/man-sheet.png",
             shadow: "./sprites/shadow.png",
             sheet: "./sprites/spritesheet.png",
             shadowBlock: "./sprites/shadowBlock.png",
+            projectile: "./sprites/projectile.png",
         };
 
         // place to store loaded images
@@ -33,6 +34,7 @@ class imageLoader{
 export const ImageLoader = new imageLoader();
 export const UNWALKABLE_LIST = ["0","7","8","9","10","11","13","21","24","25","26"];
 export const WALKABLE_LIST = ["_","1","2","3","4","5","6","12","14","15","20"];
+export const GRID_SQUARE_SIZE = 16;
 
 export function getWalkableSpaces(matrix){
     let walkableSpaces = [];
@@ -337,10 +339,10 @@ export class makeMap{
 }
 
 export function collision(aX,aY,aHeight,aWidth,bX,bY,bHeight,bWidth){
-    if(aX+10 < bX &&
-       aY+10 < bY &&
-      (aX + aWidth) > (bX + bWidth) &&
-      (aY + aHeight) > (bY + bHeight)
+    if(aX < bX &&
+       aY < bY &&
+      (aX + aWidth) > (bX + bWidth/2) &&
+      (aY + aHeight) > (bY + bHeight/2)
     ){
         return true;
     }else{

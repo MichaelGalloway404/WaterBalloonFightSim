@@ -28,13 +28,13 @@ export class GameEngine{
         while(this.totalTimePassed >= this.fps){
             // only update game at appropriate fps interval
             this.update(); 
-            this.render();
+            // this.render();
             // update at consistent intervals
             this.totalTimePassed -= this.fps;
             
         }
         // Render as fast as we can
-        // this.render();
+        this.render();
         // similar to setInterval or setTimeout
         this.requestAnimationFrameID = requestAnimationFrame(this.mainLoop);
     }

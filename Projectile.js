@@ -12,32 +12,14 @@ export class Projectile{
         });
         this.pos = new Vector2((startingPos[0]), (startingPos[1]));    
         this.angle = this.trajectory(startingPos,target,2);
+        this.animateTime = 0;
+        this.isLive = true;
+        this.animationDuration = 0;
+        // offset the sprite frames used based on team-member, for diff color projectiles
+        this.colorSpriteOffset = 0;
     }
     
     trajectory(start,target,speed){
-        // let magnitudeDiff = Math.abs(((start[0]) + (start[1])) - ((target[0]) + (target[1])))/10;
-        // let x = 0; let y = 0;
-        // if(magnitudeDiff > 0 ){
-        //     x = Math.abs((start[0])-(target[0])) / (magnitudeDiff);
-        //     y = Math.abs((start[1])-(target[1])) / (magnitudeDiff);
-        // }else{
-        //     x = Math.abs((start[0])-(target[0]));
-        //     y = Math.abs((start[1])-(target[1]));
-        // }
-        // let angle = [0,0];
-        // if(x > 5){x=5;}
-        // if(x < 1){x=1;}
-        // if(y > 5){y=5;}
-        // if(y < 1){y=1;}
-
-        // if(start[0] >  target[0]){ angle[0] = -(x);}
-        // if(start[0] == target[0]){ angle[0] = 0; }
-        // if(start[0] <  target[0]){ angle[0] = x; }
-
-        // if(start[1] >  target[1]){ angle[1] = -(x); }
-        // if(start[1] == target[1]){ angle[1] = 0; }
-        // if(start[1] <  target[1]){ angle[1] = x; }
-        
         let diffX = (target[0])-(start[0]);
         let diffY = (target[1])-(start[1]);
         let distance = Math.sqrt((diffX**2) + (diffY**2));
@@ -46,12 +28,26 @@ export class Projectile{
         let angle = [normX,normY]
         return angle;
     }
+    animate(axis,speed=6,offset=0){
+        let frameSpeed = speed;
+        let frameItter = Math.abs(axis);
+        this.projectile.currentFrame = (Math.floor(frameItter/frameSpeed)%4)+offset;
+    }
 
     update = () => {
-        this.pos.x += this.angle[0];
-        this.pos.y += this.angle[1];
-    }
-    draw = () => {
-
+        this.animateTime++
+        if(this.isLive){
+            this.pos.x += this.angle[0];
+            this.pos.y += this.angle[1];
+            this.animate(this.animateTime,6,0+this.colorSpriteOffset);
+        }else{
+            this.animationDuration++;
+            if(this.animationDuration < 20){
+                this.animate(this.animateTime,8,4+this.colorSpriteOffset);
+            }else{
+                this.animate(this.animateTime,8,16+this.colorSpriteOffset);
+            }
+            
+        }
     }
 }

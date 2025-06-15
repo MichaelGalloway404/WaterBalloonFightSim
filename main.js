@@ -1,3 +1,49 @@
+
+const inputBlueTeam = document.createElement("input");
+inputBlueTeam.type = "number";
+inputBlueTeam.value = 2;
+inputBlueTeam.classList.add("inputTeamCount");
+
+const inputRedTeam = document.createElement("input");
+inputRedTeam.type = "number";
+inputRedTeam.value = 2;
+inputRedTeam.classList.add("inputTeamCount");
+
+// Create the button element
+const restartButton = document.createElement("button");
+restartButton.textContent = "Start Battle";
+restartButton.classList.add("refresh-btn");
+
+// add to document
+const buttonContainer = document.querySelector('.buttonContainer');
+buttonContainer.appendChild(inputBlueTeam);
+buttonContainer.appendChild(inputRedTeam);
+buttonContainer.appendChild(restartButton);
+
+
+// On button click: save number and reload
+restartButton.addEventListener("click", () => {
+    const valueBlue = inputBlueTeam.value;
+    const valueRed = inputRedTeam.value;
+    if (valueBlue) {
+        localStorage.setItem("blueTeamCount", valueBlue);
+        location.reload(); // Reload the page
+    } else {
+        alert("Enter a Number for Blue Team.")
+    }
+    if (valueRed) {
+        localStorage.setItem("redTeamCount", valueRed);
+        location.reload();
+    } else {
+        alert("Enter a Number for Red Team.")
+    }
+});
+
+// On page load: check for stored number
+const storedCountBlueTeam = localStorage.getItem("blueTeamCount");
+const storedCountRedTeam = localStorage.getItem("redTeamCount");
+
+
 import { GameEngine } from "./GameEngine.js";
 import { ImageLoader, drawMap, makeMap, collision, getWalkableSpaces } from "./Resources.js";
 import { Sprite } from "./Sprite.js";
@@ -18,16 +64,28 @@ let newMap = createNewMap.createMap();
 
 let walkable = getWalkableSpaces(newMap);
 
+let team1Projectiles = [];
+let team2Projectiles = [];
+
 let spriteList = {};
+let team1 = [];
+
 let spriteList2 = {};
-let numberOfSprites = 3;
-// create a variable number of sprites
-for (let i = 0; i < numberOfSprites; i++) {
+let team2 = [];
+
+let countTeam1 = storedCountBlueTeam || 2;
+let countTeam2 = storedCountRedTeam || 2;
+
+// create a variable number of sprites for each team
+for (let i = 0; i < countTeam1; i++) {
     let randomPos = Math.floor(Math.random() * walkable.length);
     spriteList[i] = new NPC(walkable[randomPos], ImageLoader.images.npc, new Vector2(32, 32), 3, 8, 1, newMap);
-
-    randomPos = Math.floor(Math.random() * walkable.length);
+    team1.push(spriteList[i]);
+}
+for (let i = 0; i < countTeam2; i++) {
+    let randomPos = Math.floor(Math.random() * walkable.length);
     spriteList2[i] = new NPC(walkable[randomPos], ImageLoader.images.npcGen, new Vector2(32, 32), 3, 8, 1, newMap);
+    team2.push(spriteList2[i]);
 }
 
 // backround
@@ -57,191 +115,150 @@ const shadowTile = new Sprite({
     frameSize: new Vector2(16, 16 * 16),
 })
 
-let team1Projectiles = [];
-let team2Projectiles = [];
-
-// build team 1
-let team1 = [];
-for (let i = 0; i < Object.keys(spriteList).length; i++) {
-    team1.push(spriteList[i]);
+function attacking(teamA, teamAProjectile, teamB, offset = 0) {
+    for (let i = 0; i < teamA.length; i++) {
+        // target a random live opponent
+        let ran = (Math.floor(Math.random() * teamB.length));
+        if (teamB[0] != undefined && teamA[i].canAttack && teamAProjectile.length < teamA.length) {
+            let bullet = new Projectile(
+                [teamA[i].pos.x + 11, teamA[i].pos.y + 20],
+                [teamB[ran].pos.x + 11, teamB[ran].pos.y + 20],
+                ImageLoader.images.projectile, new Vector2(16, 16), 4, 5, 0
+            );
+            bullet.colorSpriteOffset = offset;
+            teamAProjectile.push(bullet);
+            teamA[i].canAttack = false;
+        }
+    }
 }
-// build team 2
-let team2 = [];
-for (let i = 0; i < Object.keys(spriteList2).length; i++) {
-    team2.push(spriteList2[i]);
+
+function projectileCollision(teamAProjectile, teamB, teamBSpriteList) {
+    for (let i = 0; i < Object.keys(teamBSpriteList).length; i++) {
+        if (teamAProjectile.length != 0 && teamBSpriteList[i] != null) {
+            for (let j = 0; j < teamAProjectile.length; j++) {
+                if (teamAProjectile[j].isLive &&
+                    teamBSpriteList[i].isLive &&
+                    collision(teamBSpriteList[i].pos.x, teamBSpriteList[i].pos.y, 32, 21,
+                        teamAProjectile[j].pos.x, teamAProjectile[j].pos.y,
+                        teamAProjectile[j].projectile.frameSize.y, teamAProjectile[j].projectile.frameSize.x
+                    )) {
+                    teamB.splice(teamB.indexOf(teamBSpriteList[i]), 1);
+                    teamAProjectile[j].isLive = false;
+                    teamBSpriteList[i].isLive = false;
+                }
+            }
+        }
+    }
+    // update team
+    for (let i = 0; i < Object.keys(teamBSpriteList).length; i++) {
+        if (teamBSpriteList[i] != null) {
+            teamBSpriteList[i]?.update();
+        }
+    }
 }
 
-let timer = 0;
+function projectileCleanUp(team) {
+    // if either teams projectile goes out of bounds
+    for (let i = 0; i < team.length; i++) {
+        if (team[i].pos.x < 0 || team[i].pos.x > window.screen.width ||
+            team[i].pos.y < 0 || team[i].pos.y > window.screen.height) {
+            team.splice(team.indexOf(team[i]), 1);
+        }
+    }
+
+    // when a projectile is done animating remove it from drawing list
+    for (let i = 0; i < team.length; i++) {
+        if (team[0] !== undefined) {
+            if (team[i].animationDuration > 20) {
+                team.splice(team.indexOf(team[i]), 1);
+            }
+        }
+    }
+    // update projectiles
+    if (team.length != 0) {
+        for (let i = 0; i < team.length; i++) {
+            team[i].update();
+        }
+    }
+}
 
 // our games loop for updateding the game world
 const update = () => {
-    timer++;
-    if (timer > 400) {
-        // reset team 1
-        if (team1Projectiles.length > 0) { team1Projectiles = []; }
-        // reset team 2
-        if (team2Projectiles.length > 0) { team2Projectiles = []; }
-        timer = 0;
-    }
+    // team attacking and its projectile
+    attacking(team1, team1Projectiles, team2, 8);
+    attacking(team2, team2Projectiles, team1);
 
-    // delete team 1 bullet on collision
-    for (let i = 0; i < team1Projectiles.length; i++) {
-        if (team1Projectiles[i].pos.x < 0 || team1Projectiles[i].pos.x > window.screen.width ||
-            team1Projectiles[i].pos.y < 0 || team1Projectiles[i].pos.y > window.screen.height) {
-            team1Projectiles.splice(team1Projectiles.indexOf(team1Projectiles[i]), 1);
-        }
-    }
-    // delete team 2 bullet on collision
-    for (let i = 0; i < team2Projectiles.length; i++) {
-        if (team2Projectiles[i].pos.x < 0 || team2Projectiles[i].pos.x > window.screen.width ||
-            team2Projectiles[i].pos.y < 0 || team2Projectiles[i].pos.y > window.screen.height) {
-            team2Projectiles.splice(team2Projectiles.indexOf(team2Projectiles[i]), 1);
-        }
-    }
+    // collision btw opposong teams projectile
+    projectileCollision(team1Projectiles, team2, spriteList2);
+    projectileCollision(team2Projectiles, team1, spriteList);
 
-    // COLLISON BTW TEAM 2 AND PROJECTILE FROM TEAM 1
-    for (let i = 0; i < Object.keys(spriteList2).length; i++) {
-        if (team1Projectiles.length != 0 && spriteList2[i] != null) {
-            for (let j = 0; j < team1Projectiles.length; j++) {
-                if (spriteList2[i] !== null && collision(
-                    spriteList2[i].pos.x, spriteList2[i].pos.y,
-                    40, 21,
-                    Math.round(team1Projectiles[j].pos.x), Math.round(team1Projectiles[j].pos.y),
-                    team1Projectiles[j].projectile.frameSize.y, team1Projectiles[j].projectile.frameSize.x
-                )) {
-                    team2.splice(team2.indexOf(spriteList2[i]), 1);
-                    team1Projectiles.splice(team1Projectiles.indexOf(team1Projectiles[j]), 1);
-                    spriteList2[i] = null;
-                }
-            }
-        }
-    }
-    // COLLISON BTW TEAM 1 AND PROJECTILE FROM TEAM 2
-    for (let i = 0; i < Object.keys(spriteList).length; i++) {
-        if (team2Projectiles.length != 0 && spriteList[i] != null) {
-            for (let j = 0; j < team2Projectiles.length; j++) {
-                if (spriteList[i] !== null && collision(
-                    spriteList[i].pos.x, spriteList[i].pos.y,
-                    40, 21,
-                    Math.round(team2Projectiles[j].pos.x), Math.round(team2Projectiles[j].pos.y),
-                    team2Projectiles[j].projectile.frameSize.y, team2Projectiles[j].projectile.frameSize.x
-                )) {
-                    team1.splice(team1.indexOf(spriteList[i]), 1);
-                    team2Projectiles.splice(team2Projectiles.indexOf(team2Projectiles[j]), 1);
-                    spriteList[i] = null;
-                }
-            }
-        }
-    }
+    projectileCleanUp(team1Projectiles);
+    projectileCleanUp(team2Projectiles);
 
-    // handle team 1 attacking
-    for (let i = 0; i < Object.keys(spriteList).length; i++) {
-        let ran = (Math.floor(Math.random() * team2.length));
-        if (spriteList[i] !== null && team2[0] != undefined && timer >= 100 && timer <= 101) {
-            let bullet = new Projectile(
-                [spriteList[i].pos.x + 11, spriteList[i].pos.y + 20],
-                [team2[ran].pos.x + 11, team2[ran].pos.y + 20],
-                ImageLoader.images.grid, new Vector2(5, 5), 1, 0, 0
-            );
-            if (team1Projectiles.length < numberOfSprites) {
-                team1Projectiles.push(bullet);
-            }
-        }
-    }
-    // handle team 2 attacking
-    for (let i = 0; i < Object.keys(spriteList2).length; i++) {
-        let ran = (Math.floor(Math.random() * team1.length));
-        if (spriteList2[i] !== null && team1[0] != undefined && timer >= 100 && timer <= 101) {
-            let bullet = new Projectile(
-                [spriteList2[i].pos.x + 11, spriteList2[i].pos.y + 20],
-                [team1[ran].pos.x + 11, team1[ran].pos.y + 20],
-                ImageLoader.images.grid, new Vector2(5, 5), 1, 0, 0
-            );
-            if (team2Projectiles.length < numberOfSprites) {
-                team2Projectiles.push(bullet);
-            }
-        }
-    }
-
-    // update team 1
-    for (let i = 0; i < Object.keys(spriteList).length; i++) {
-        if (spriteList[i] != null) {
-            spriteList[i]?.update();
-        }
-
-    }
-    // update team 2
-    for (let i = 0; i < Object.keys(spriteList2).length; i++) {
-        if (spriteList2[i] != null) {
-            spriteList2[i]?.update();
-        }
-
-    }
-    // update team 1 projectiles
-    if (team1Projectiles.length != 0) {
-        for (let i = 0; i < team1Projectiles.length; i++) {
-            team1Projectiles[i].update();
-        }
-    }
-    // update team 2 projectiles
-    if (team2Projectiles.length != 0) {
-        for (let i = 0; i < team2Projectiles.length; i++) {
-            team2Projectiles[i].update();
-        }
+    // Display Winners or Losers
+    if (team1.length > 0 && team2.length > 0) {
+        document.getElementById('scoreBoard').innerHTML = 'Score Board: Blue: '+team1.length+' Red: '+team2.length;
+    } else if (team1.length == 0 && team2.length > 0) {
+        document.getElementById('scoreBoard').innerHTML = 'Winner Blue Team!'
+    } else if (team1.length > 0 && team2.length == 0) {
+        document.getElementById('scoreBoard').innerHTML = 'Winner Red Team!'
+    } else if (team1.length == 0 && team2.length == 0) {
+        document.getElementById('scoreBoard').innerHTML = 'All Losers!!!'
     }
 };
 
 // pass to the queue our sprite and it will be assign by its y position
 let layerQ = new MinHeap("pos", "y");
-
+function drawSpites(sprite) {
+    for (let i = 0; i < Object.keys(sprite).length; i++) {
+        if (sprite[i] != null) {
+            // add each of our sprite to priorityQ based on their y position, to draw sprites higher on the screen first
+            // gives it a fealing of depth, when one sprite walks behind another sprite, it wont be standing on the others head
+            layerQ.add(sprite[i]);
+        }
+    }
+}
+function drawProjectile(projectile, offsetX, offsetY) {
+    if (projectile.length !== 0) {
+        for (let i = 0; i < projectile.length; i++) {
+            projectile[i].projectile.drawImage(ctx, projectile[i].pos.x - offsetX, projectile[i].pos.y - offsetY);
+        }
+    }
+}
+let offsetX = 9;
+let offsetY = 20
 const draw = () => {
     // console.log("DRAW");
     skySprite.drawImage(ctx, 0, 0);
     // method that draws correct map tile image to our randomly generated map
     drawMap(newMap, mapTile, ctx, shadowTile);
 
-    // add each of our sprite to priorityQ based on their y position, to draw sprites higher on the screen first
-    // gives it a fealing of depth, when one sprite walks behind another sprite, it wont be standing on the others head
-    for (let i = 0; i < Object.keys(spriteList).length; i++) {
-        if (spriteList[i] != null) {
-            layerQ.add(spriteList[i]);
-        }
-    }
-
-    for (let i = 0; i < Object.keys(spriteList2).length; i++) {
-        if (spriteList2[i] != null) {
-            layerQ.add(spriteList2[i]);
-        }
-
-    }
-
+    // draw shadows/wet-spots for players
+    drawSpites(spriteList);
+    drawSpites(spriteList2);
     // if Q is not empty
     while (layerQ.peek() !== null) {
         let tempSprite = layerQ.remove();
-        // add a shadow to sprite
-        shadow.drawImage(ctx, tempSprite.pos.x - 9, tempSprite.pos.y - 20);
-        tempSprite.npc.drawImage(ctx, tempSprite.pos.x - 9, tempSprite.pos.y - 20);
-        // shadow.drawImage(ctx, tempSprite.pos.x, tempSprite.pos.y);
-        // tempSprite.npc.drawImage(ctx, tempSprite.pos.x, tempSprite.pos.y);
+        // keep drawing a shadow for player even if they are out of the game
+        shadow.drawImage(ctx, tempSprite.pos.x - offsetX, tempSprite.pos.y - offsetY);
+        // having the shadow drawn here and seprately allows for a wet spot to be left
+        // in background signigying an out play and keeds it from overlaping existing players
     }
 
-    // if(bullet != null){
-    //     bullet.projectile.drawImage(ctx,bullet.pos.x,bullet.pos.y);
-    // }
-
-    // draw team 1 prjectiles
-    if (team1Projectiles.length !== 0) {
-        for (let i = 0; i < team1Projectiles.length; i++) {
-            team1Projectiles[i].projectile.drawImage(ctx, team1Projectiles[i].pos.x - 9, team1Projectiles[i].pos.y - 20);
-        }
-    }
-    // draw team 2 prjectiles
-    if (team2Projectiles.length !== 0) {
-        for (let i = 0; i < team2Projectiles.length; i++) {
-            team2Projectiles[i].projectile.drawImage(ctx, team2Projectiles[i].pos.x - 9, team2Projectiles[i].pos.y - 20);
+    // draw players that are not out yet
+    drawSpites(spriteList);
+    drawSpites(spriteList2);
+    // if Q is not empty
+    while (layerQ.peek() !== null) {
+        let tempSprite = layerQ.remove();
+        if (tempSprite.showSprite) {
+            // draw sprite
+            tempSprite.npc.drawImage(ctx, tempSprite.pos.x - offsetX, tempSprite.pos.y - offsetY);
         }
     }
 
+    drawProjectile(team1Projectiles, offsetX, offsetY);
+    drawProjectile(team2Projectiles, offsetX, offsetY);
 }
 
 const gameLoop = new GameEngine(update, draw);

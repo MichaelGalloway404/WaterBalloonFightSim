@@ -49,7 +49,7 @@ export class Input{
     }
 
     // get current dir
-    get direction(){ // getters allow for syntax like Input.direction();
+    getdirection(){ // getters allow for syntax like Input.direction();
         return this.heldDIR[0]; // return first element, could be undefined
     }
     onArrowPressed(dir){
