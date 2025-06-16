@@ -23,7 +23,7 @@ html,body{
     align-items: center;
 }
 canvas{
-    width: 50%;
+    width: 500px;
     border: solid 1px rgb(168, 200, 10);
     border-radius: 10%;
     background-color: blue;
@@ -39,7 +39,8 @@ canvas{
     background-color: rgb(13, 6, 0);
     color: rgb(255, 255, 255);
     font-size: 1.5rem;
-    margin: 30px;
+    margin: 5px;
+    width: 50px;
     text-align: center;
 }
 .refresh-btn{
