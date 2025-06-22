@@ -5,12 +5,6 @@ html,body{
     image-rendering: pixelated; /* nice crispt edges */
     background-color: rgb(0, 0, 0);
 }
-/* body{
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-} */
 #scoreBoard{
     display: flex;
     justify-content: center;
@@ -23,10 +17,18 @@ html,body{
     align-items: center;
 }
 canvas{
-    width: 500px;
+    width: 50%;
     border: solid 1px rgb(168, 200, 10);
     border-radius: 10%;
     background-color: blue;
+}
+@media (max-width: 600px) {
+    canvas{
+        width: 500px;
+        border: solid 1px rgb(168, 200, 10);
+        border-radius: 10%;
+        background-color: blue;
+    }
 }
 .buttonContainer{
     display: flex;
@@ -65,15 +67,3 @@ canvas{
     text-decoration: none;
     font-size: 2rem;
 }
-
-/* For Chrome, Safari, Edge */
-/* .inputBlueTeam::-webkit-inner-spin-button,
-.inputBlueTeam::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-} */
-
-/* For Firefox */
-/* .inputBlueTeam {
-  -moz-appearance: textfield;
-} */
