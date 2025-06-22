@@ -22,7 +22,7 @@ canvas{
     border-radius: 10%;
     background-color: blue;
 }
-@media (max-width: 500px) {
+@media (max-width: 800px) {
     canvas{
         width: 500px;
         border: solid 1px rgb(168, 200, 10);
