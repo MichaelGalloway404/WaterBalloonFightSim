@@ -7,3 +7,5 @@ The NPCs use the A* to find the random destination they wish to go to and then a
 I used a heap to determine which sprite should be drawn first so that when they are drawn on the screen there is a correct overlapping of depth between sprites who are father away.  
   
 Overall its a fun project that let me practice some of what I learned in my Algorithm Analysis Class CS_318.  
+
+Try it out: https://michaelgalloway404.github.io/WaterBalloonFightSim/
