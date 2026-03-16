@@ -51,7 +51,6 @@ The simulator emphasizes algorithmic efficiency, object-oriented design, and cle
 - **MinHeap:** Priority queue for sprite rendering based on depth.
 - **Collision Detection:** Axis-aligned bounding box system for projectiles.
 - **Modular Design:** Separate JS modules for sprites, projectiles, map generation, and AI logic.
-- **Local Storage:** Saves team sizes between sessions for user convenience.
 
 ---
 
